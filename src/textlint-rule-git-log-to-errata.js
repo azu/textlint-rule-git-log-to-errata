@@ -15,7 +15,8 @@ var reporter = function(context, options) {
     }
     const errataList = require(errataFilePath);
     const matchList = errataList.map(errata => {
-        const actual = errata.oldTokens.slice(errata.start, errata.end).map(token => token.surface_form).join("");
+        const actualMatchTokens = errata.oldTokens.slice(errata.start, errata.end);
+        const actual = actualMatchTokens.map(token => token.surface_form).join("");
         const expected = errata.newTokens.slice(errata.start, errata.end).map(token => token.surface_form).join("");
         const message = `${actual} => ${expected}`;
         return {
@@ -32,6 +33,7 @@ var reporter = function(context, options) {
             const text = getSource(node);
             return tokenize(text).then(currentTokens => {
                 currentTokens.forEach(token => {
+                    const reportCandidates = [];
                     matchList.forEach(({matcher, message, expected}) => {
                         const {match, tokens} = matcher(token);
                         if (!match) {
@@ -39,16 +41,32 @@ var reporter = function(context, options) {
                         }
                         const firstToken = tokens[0];
                         const index = Math.max(firstToken.word_position - 1, 0);
+                        let ruleError;
                         if (expected) {
-                            report(node, new RuleError(message, {
+                            ruleError = new RuleError(message, {
                                 index: index,
                                 fix: fixer.replaceTextRange([index, index + expected.length], expected)
-                            }));
+                            });
                         } else {
-                            report(node, new RuleError(message, {
+                            ruleError = new RuleError(message, {
                                 index: index
-                            }));
+                            });
                         }
+                        const key = tokens.map(token => token.surface_form).join("");
+                        reportCandidates.push([key, ruleError]);
+                    });
+                    // two match same token, maybe it someting wrong
+                    // dictionary conflict
+                    const duplicatedDict = {};
+                    reportCandidates.forEach(([key]) => {
+                        duplicatedDict[key] = duplicatedDict[key] ? duplicatedDict[key] + 1 : 1;
+                    });
+                    reportCandidates.forEach(([key, ruleError]) => {
+                        if (reportCandidates[key] > 1) {
+                            // wrong mismatch?
+                            return
+                        }
+                        report(node, ruleError);
                     });
                 });
             });

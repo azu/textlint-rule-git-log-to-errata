@@ -12,6 +12,9 @@ tester.run("textlint-rule-git-log-to-errata.js", rule, {
         {
             text: "text",
             options
+        }, {
+            text: "多用されているswitch文が出てきた場合",
+            options
         }
     ],
     invalid: [
