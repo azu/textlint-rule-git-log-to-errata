@@ -1,6 +1,7 @@
 // LICENSE : MIT
 "use strict";
 import {RuleHelper} from "textlint-rule-helper";
+const path = require("path");
 const tokenize = require("kuromojin");
 const createTokenMatcher = require("morpheme-match");
 const defaultOptions = {
@@ -13,7 +14,12 @@ var reporter = function(context, options) {
     if (errataFilePath === undefined) {
         throw new Error('`filePath` is required. { "filePath": "path/to/errata.json", ')
     }
-    const errataList = require(errataFilePath);
+
+    const textlintRcFilePath = context.config ? context.config.configFile : null;
+    // .textlinrc directory
+    const textlintRCDir = textlintRcFilePath ? path.dirname(textlintRcFilePath) : process.cwd();
+    const absoluteErrataPath = path.resolve(textlintRCDir, errataFilePath);
+    const errataList = require(absoluteErrataPath);
     const matchList = errataList.map(errata => {
         const actualMatchTokens = errata.oldTokens.slice(errata.start, errata.end);
         const actual = actualMatchTokens.map(token => token.surface_form).join("");
