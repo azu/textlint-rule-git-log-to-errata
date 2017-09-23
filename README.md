@@ -2,7 +2,7 @@
 
 Use [git-log-to-errata](https://github.com/azu/git-log-to-errata "git-log-to-errata") for textlint.
 
-You Git history help to write text.
+Your Git history help to write text.
 
 ## Install
 
